@@ -35,5 +35,9 @@ Teoreticky sa to dá spraviť aj tak, že by toto robil každý server v LAN sam
 
 ## Základný koncept fungovania
 
-Kvôli double-NATu, musíme akékoľvek spojenie začať z LAN do internetu, naopak to jednoducho nebude fungovať - NAT u ISP nám to nedovolí. Toto spojenie taktiež budeme musieť nejako udržať otvorené (keep alive), inak nám ho NAT po chvíli neaktivity jednoducho uzavrie, čo by spôsovilo pád všetkých, namä TCP, spojení.
-Nakoniec, musíme nejako identifikovať, ku ktorému zariadeniu v LAN chceme z internetu pristupovať, keďže vlastne budeme mať iba jednu verejnú IPv4 adresu (tú ktorou disponuje VPS), ale potenciálne viacero zariadení v LAN. 
+Kvôli double-NATu, musíme akékoľvek spojenie začať z LAN do internetu, naopak to jednoducho nebude fungovať - NAT u ISP nám to nedovolí. Toto spojenie taktiež budeme musieť nejako udržať otvorené (keep alive), inak nám ho NAT po chvíli neaktivity jednoducho uzavrie, čo by spôsovilo reset všetkých, namä TCP, spojení.
+Na spojenie medzi RPi4 v LAN a VPS sa celkom dobre hodí VPN, jednak z hľadiska bezpečnosti, ale aj kvôli flexibilite. OpenVPN je v tomto ohľade asi najznámejšie riešenie, avšak nie je úplne ideálne. Jednak nie je práve najjednoduchšie čo sa konfigurácie týka, a taktiež má históriu, nie naozaj ideálnej kompatibility, čo sa rôznych platoform týka, či už je to Microsoft Windows, MacOS, alebo dokonca aj Android.
+Nedávno sa začala ukazovať potenciálna náhrada OpenVPN: WireGuard (wg).
+Nakoniec, musíme nejako identifikovať, ku ktorému zariadeniu v LAN chceme z internetu pristupovať, keďže vlastne budeme mať iba jednu verejnú IPv4 adresu (tú ktorou disponuje VPS), ale potenciálne viacero zariadení v LAN.
+Toto sa dá riešiť taktiež viacerými spôsobmi, napríklad cez reverznú proxy, ale ja to budem riešiť, paradoxne, opäť pridaním ďalšieho NATu, konkrétne PNATu (resp. PATu) takže budem mapovať interné zariadenia / adresy v podstate na porty.
+
