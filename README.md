@@ -20,3 +20,20 @@ Teraz si už ale môžete port-forwardovať na svojom NAT-e u seba doma koľko c
 
 
 
+# Prístup do siete okľukou
+## Konkrétne použitím externého servera
+
+Ja budem obchádzať toto obmedzenie double-NATu pomocou nejakého ďalšieho servera, ktorý má verejnú IPv4 adresu. Konkrétne pomocou VPS - Virutal Private Server. Je to virtualizovaný server, principiálne identický s behom linuxovej distribúcie (alebo aj iného OS, na tom prakticky nezáleží) vo VirtualBox, alebo VMware, s tým, že na svojej virtuálnej sieťovej karte bude mať pridelenú verejnú IPv4 adresu!
+
+## Môj VPS
+
+Konkrétne môj VPS bude bežať na distribúcií CentOS 7, ktorá je síce už dosť stará, ale stále dostáva nejaké tie aktualizácie, a na tento účel bez problémov poslúži.
+
+Okrem toho budeme potrebovať ešte nejaké zariadenie u nás, v LAN do ktorej budeme chcieť pristupovať, respektíve v ktorej sa nachádzajú zariadenia ktoré budeme chcieť "vystrčiť" na internet (expose), ktoré poslúži ako server / node.
+
+Teoreticky sa to dá spraviť aj tak, že by toto robil každý server v LAN samostatne, tak ako je mu to potrebné, ale to by výrazne skomplikovalo konfiguráciu - ako počiatočné nasadenie, tak aj rekonfiguráciu. Namiesto toho, tak budem mať v LAN iba Raspebrry PI 4, ktoré bude zastrešovať prístup a komunikáciu medzi zariadeniami LAN a VPS.
+
+## Základný koncept fungovania
+
+Kvôli double-NATu, musíme akékoľvek spojenie začať z LAN do internetu, naopak to jednoducho nebude fungovať - NAT u ISP nám to nedovolí. Toto spojenie taktiež budeme musieť nejako udržať otvorené (keep alive), inak nám ho NAT po chvíli neaktivity jednoducho uzavrie, čo by spôsovilo pád všetkých, namä TCP, spojení.
+Nakoniec, musíme nejako identifikovať, ku ktorému zariadeniu v LAN chceme z internetu pristupovať, keďže vlastne budeme mať iba jednu verejnú IPv4 adresu (tú ktorou disponuje VPS), ale potenciálne viacero zariadení v LAN. 
