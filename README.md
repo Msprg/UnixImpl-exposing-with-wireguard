@@ -1,6 +1,20 @@
 # UnixImpl-exposing-with-wireguard
 Semestrálna práca pre Implementácie Linuxu / UNIXu, tunelovanie služieb z LAN cez NAT na internet.
 
+Autor: Matúš Prančík
+
+# Obsah - TOC
+
+- [UnixImpl-exposing-with-wireguard](#udos_manjaro)
+- [Obsah - TOC](#obsah---toc)
+- [Koncept a cieľ(e)](#zadanie-semestrálneho-projektu)
+- [Kde a ako získať Manjaro](#kde-a-ako-získať-manjaro)
+- [Príprava nového virtuálneho stroja vo VMware Workstation 16](#príprava-nového-virtuálneho-stroja-vo-vmware-workstation-16)
+- [Live systém a inštalácia systému](#Live-systém-a-inštalácia-systému)
+- [Prvé spustenie systému, a inštalácia aktualizácií](#prvé-spustenie-systému-a-inštalácia-aktualizácií)
+- [Inštalácia aplikácií a nastavenie systému pre účely zadania](#Inštalácia-aplikácií-a-nastavenie-systému-pre-účely-zadania)
+- [Hotovo!](#hotovo)
+
 
 # Koncept a cieľ(e)
 Pred tým, než sa internet rozšíril do sveta tak ako je tomu teraz, sa s takouto veľkou popularitou pri nárhu niektorých dôležitých protokolov pre fungovanie internetu, nepočítalo. Avšak postupne sa ukázalo že je adresný priestor IPv4 nedostačujúci. Riešenie pre tento problém v skutočnosti existuje už celkom dlho - IPv6, avšak jeho adpocia je zatiaľ naozaj veľmi chabá / sporadická, aj keď sa to postupne pomaly zlepšuje.
