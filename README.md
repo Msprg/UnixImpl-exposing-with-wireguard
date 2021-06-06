@@ -161,7 +161,7 @@ Teraz nám ešte bude treba čosi pre NATovanie paketov. CentOS 7 natívne použ
 
 A to je v podstate všetko, čo sa inštalácie iptables týka. Ak by sme službu iptables chceli spustiť hneď teraz, bez reštartu, `systemctl start iptables`.
 
-Neskôr si ale určite budeme chcieť konfiguráciu iptables uložiť `service iptables save`, inak sa nám po reštarte zmaže.
+Neskôr si ale určite budeme chcieť konfiguráciu iptables uložiť pomocou `service iptables save`, inak sa nám po reštarte zmaže.
 
 
 
