@@ -49,8 +49,7 @@ Teoreticky sa to dá spraviť aj tak, že by toto robil každý server v LAN sam
 
 ## Základný koncept fungovania
 
-
-![Exposing local services through WireGuard](https://user-images.githubusercontent.com/18015488/120902402-7c447580-c640-11eb-8152-03ed23417467.png)
+![Exposing local services through WireGuard](https://user-images.githubusercontent.com/18015488/120908703-3520a980-c66d-11eb-8ed8-f3b5e0e812db.png)
 
 Kvôli double-NATu, musíme akékoľvek spojenie začať z LAN do internetu, naopak to jednoducho nebude fungovať - NAT u ISP nám to nedovolí. Toto spojenie taktiež budeme musieť nejako udržať otvorené (keep alive), inak nám ho NAT po chvíli neaktivity jednoducho uzavrie, čo by spôsovilo reset všetkých, namä TCP, spojení.
 
@@ -64,5 +63,84 @@ Toto sa dá riešiť taktiež viacerými spôsobmi, napríklad cez reverznú pro
 
 # Samotná konfigurácia v praxi
 ## Konfigurácia servera / VPS
+
+Ako už bolo spomenuté, na serveri v mojom prípade beží CentOS 7.
+
+Nebudem tu demonštrovať nič z úvodnej konfigurácie, ako napríklad aktualizácie systému či bezpečné nastavenie SSH servera.
+
+### Inštalácia WireGuard
+
+
+Ako je uvedené na [oficiálnych stránkach inštalácie WireGuard](https://www.wireguard.com/install/#centos-7-module-plus-module-kmod-module-dkms-tools), pre CentOS 7 tu sú 3 metódy inštalácie. Dôvodom je, že CentOS 7 používa staré jadro, ktoré WireGuard natívne nepodporuje. Použijeme metódu 1 ktorá nám pre toto nainštaluje kernel CentOS kernel-plus.
+
+
+```
+  # Method 1: a signed module is available as built-in to CentOS's kernel-plus:
+  
+  sudo yum install yum-utils epel-release
+  sudo yum-config-manager --setopt=centosplus.includepkgs=kernel-plus --enablerepo=centosplus --save
+  sudo sed -e 's/^DEFAULTKERNEL=kernel$/DEFAULTKERNEL=kernel-plus/' -i /etc/sysconfig/kernel
+  sudo yum install kernel-plus wireguard-tools
+  sudo reboot
+```
+
+Po reštarte by sme už mali bežať na novom jadre, vrátane automaticky aktívnej služby WireGuard, takže aj ten už bude po reštarte spustený.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Teraz nám ešte bude treba čosi pre NATovanie paketov. CentOS 7 natívne používa `Firewalld`, ale ja, byť tvrdohlavý aký som, chcem napriek tomu použiť `iptables`.
+"Prepnúť" na iptables, je prekavpivo bezbolestné:
+```
+  # Vypneme službu firewalld, nech sa nezapína pri boote:
+  systemctl disable firewalld
+
+  # Nainštalujeme si cez yum iptables ako akýkoľvek iný balíček:
+  yum install iptables-services
+  
+  # Aktivujeme službu iptables, nech sa nám spúšťa pri boote:
+  systemctl enable iptables
+```
+
+A to je v podstate všetko, čo sa inštalácie iptables týka. Ak by sme službu iptables chceli spustiť hneď teraz, bez reštartu, `systemctl start iptables`.
+
+Neskôr si ale určite budeme chcieť konfiguráciu iptables uložiť `service iptables save`, inak sa nám po reštarte zmaže.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
