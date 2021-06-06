@@ -87,9 +87,50 @@ Ako je uvedené na [oficiálnych stránkach inštalácie WireGuard](https://www.
 Po reštarte by sme už mali bežať na novom jadre, vrátane automaticky aktívnej služby WireGuard, takže aj ten už bude po reštarte spustený.
 
 
+### Konfigurácia WireGuard na VPS
+
+
+WireGuard "nepodporuje" štandardný model klient-server. Namiesto toho, existuje iba konfigurácia použitého WireGuard rozhrania, a uzly (nodes). Napriek tomu, pokiaľ by som použil výraz "WireGuard server", myslím tým CentOS 7 VPS.
+
+
+Veľmi užitočná aj dobre napísaná dokumentácia, je, možno prekvapivo, na stránkach dokumentácie pre projekt Pi-Hole, čo je vlastne projekt na blokovanie reklám na úrovni DNS, navrhnutý pre beh na Raspberry Pi, ale to teraz nie je podstatné. V dokumentácií Pi-Hole je totižto zdokumentovaného oveľa viac než len Pi-Hole. [Dokumenácia pre nastavenie WireGuard na stránkach Pi-Hole](https://docs.pi-hole.net/guides/vpn/wireguard/overview/)
+
+
+Určitú časť tejto dokumentácie, ktorú som sám používal, budem parafrázovať, avšak niektoré časti, pre ktoré to bude vhodné, určite pozmením.
 
 
 
+1. Ako úplne prvé, vojdeme do interaktívnej relácie root shellu `sudo -i`, to aby sme nemuseli teraz všade pred každý príkaz pridávať sudo. (teda, pokiaľ je to potrebné, ja som bol prihlásený ako root).
+2. Vojdeme do konfiguračného adresára WireGurad `cd /etc/wireguard`.
+3. Budeme vytvárať veľa súborov, preto použijeme `umask 077`, nech potom neskôr nemáme problémy s oprávneniami.
+4. Vygenerujeme pár kryptografických kľúčov `wg genkey | tee server.key | wg pubkey > server.pub`. Každý jeden WireGuard node bude potrebovať takýto kľúčový pár.
+5. Vytvoríme si konfiguračný textový súbor wg0.conf `nano /etc/wireguard/wg0.conf`. Kde podľa názvov týchto súborov bude WireGurat pomenovávať vytvárané interfaces.
+6. Na vrch konfiguračného súboru, vložíme definícu interface:
+```
+[Interface]
+Address = 10.100.0.1/24, fd08:4711::1/64  #Povolené adresné rozsahy v tomto wg0 interface, a zároveň aj adresa tohoto node
+ListenPort = 47111                        #Port cez ktorý sa bude dať ku tomuto interface pripojiť s ostatnými nodes
+MTU = 1500                                #WireGuard defaultne používa MTU 1412, kým drvivá väčšina intefaces používa "štandarne" 1500 MTU. Nižšia hodnota MTU vo WireGuard tuneli často spôsobuje nadbytočnú fragmentáciu paketov, čo znižuje výkonnosť. Toto by malo pomôcť, ale mojim problémom s výkonom to veľmi nepomohlo...
+```
+7. Teraz do konfiguračného súboru vložíme súkromný kľúč. Šikovne to môžeme urobiť pomocou `echo "PrivateKey = $(cat server.key)" >> /etc/wireguard/wg0.conf`.
+8. Konfiguráciu WireGuard interface na serveri máme týmto hotovú. Môže (ale nemusí) vyzerať nejako takto:
+
+```
+[Interface]
+Address = 10.100.0.1/24, fd08:4711::1/64 #Address of the VPS inside Wireguard
+ListenPort = 47111
+MTU = 1500
+PrivateKey = UOREQ/yam+jnDSns8sdyfmoDs5sds8sd5DS85s1pO7M=
+```
+
+Ale teraz ešte musíme vytvoriť konfiguráciu pre ostatné zariadenia, ktoré sa budú ku serveru pripájať. Minimálne teda pre RPi 4.
+
+
+### Vytváranie konfigurácií pre klientov (nodes)
+
+**Tu pokračujeme ešte stále na serveri, v adresári `/etc/wireguard/`!**
+
+ToDo: ...
 
 
 
@@ -112,7 +153,7 @@ Teraz nám ešte bude treba čosi pre NATovanie paketov. CentOS 7 natívne použ
   systemctl disable firewalld
 
   # Nainštalujeme si cez yum iptables ako akýkoľvek iný balíček:
-  yum install iptables-services
+  yum install -y iptables-services
   
   # Aktivujeme službu iptables, nech sa nám spúšťa pri boote:
   systemctl enable iptables
