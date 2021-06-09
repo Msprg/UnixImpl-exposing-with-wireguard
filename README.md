@@ -110,7 +110,7 @@ Určitú časť tejto dokumentácie, ktorú som sám používal, budem parafráz
 [Interface]
 Address = 10.100.0.1/24, fd08:4711::1/64  #Povolené adresné rozsahy v tomto wg0 interface, a zároveň aj adresa tohoto node
 ListenPort = 47111                        #Port cez ktorý sa bude dať ku tomuto interface pripojiť s ostatnými nodes
-MTU = 1500                                #WireGuard defaultne používa MTU 1412, kým drvivá väčšina intefaces používa "štandarne" 1500 MTU. Nižšia hodnota MTU vo WireGuard tuneli často spôsobuje nadbytočnú fragmentáciu paketov, čo znižuje výkonnosť. Toto by malo pomôcť, ale mojim problémom s výkonom to veľmi nepomohlo...
+MTU = 1380                                #WireGuard defaultne používa MTU 1412, kým drvivá väčšina intefaces používa "štandarne" 1500 MTU. Nižšia hodnota MTU vo WireGuard tuneli často spôsobuje nadbytočnú fragmentáciu paketov, čo znižuje výkonnosť. Toto by malo pomôcť, ale mojim problémom s výkonom to veľmi nepomohlo...
 ```
 7. Teraz do konfiguračného súboru vložíme súkromný kľúč. Šikovne to môžeme urobiť pomocou `echo "PrivateKey = $(cat server.key)" >> /etc/wireguard/wg0.conf`.
 8. Konfiguráciu WireGuard interface na serveri máme týmto hotovú. Môže (ale nemusí) vyzerať nejako takto:
@@ -119,7 +119,7 @@ MTU = 1500                                #WireGuard defaultne používa MTU 141
 [Interface]
 Address = 10.100.0.1/24, fd08:4711::1/64 #Address of the VPS inside Wireguard
 ListenPort = 47111
-MTU = 1500
+MTU = 1380
 PrivateKey = UOREQ/yam+jnDSns8sdyfmoDs5sds8sd5DS85s1pO7M=
 ```
 
@@ -130,22 +130,112 @@ Ale teraz ešte musíme vytvoriť konfiguráciu pre ostatné zariadenia, ktoré 
 
 **Tu pokračujeme ešte stále na serveri, v adresári `/etc/wireguard/`!**
 
-ToDo: ...
+
+0. Ak je to potrebné, vráťte sa do adresára `/etc/wiregurad/` v privilegovanom shelli:
+```
+sudo -i
+cd /etc/wireguard
+umask 077
+```
+
+1. Pre jednoduhosť príkazov, a možnosť ich opakovaného použitia pre viacero klientov, si vytvoríme premennú pre meno klienta: `name="client_name"`.
+2. Vygenerujeme kryptografické kľúče:
+  2.1 Asymetrický (Private-Public pair): `wg genkey | tee "${name}.key" | wg pubkey > "${name}.pub"`,
+  2.2 Symetrický (pre-shared key): `wg genpsk > "${name}.psk"`
+  
+3. Pridáme záznam o peerovi (klientovi, node) do konfiguračného súboru:
+```
+echo "[Peer]" >> /etc/wireguard/wg0.conf
+echo "PublicKey = $(cat "${name}.pub")" >> /etc/wireguard/wg0.conf
+echo "PresharedKey = $(cat "${name}.psk")" >> /etc/wireguard/wg0.conf
+```
+
+4. Pridáme mu rozsah poveloených adries, `echo "AllowedIPs = 10.100.0.2/32, fd08:4711::2/128" >> /etc/wireguard/wg0.conf` kde:
+  IPv4 `10.100.0.2/32` je adresa konkrétneho peera, ideálne z rozsahu definovanom v časti `[Interface]` na riadku
+  `Address = ...`.
+  IPv6 `fd08:4711::2/128` je IPv6 ekvivalent predchádzajúcej IPv4 adresy.
+  IPv4 `192.168.0.0/24` je adresný rozsah, našej LAN, do ktorej budeme pristupovať. Pre jednoduchosť sa adresy sietí
+  zhodujú, ale aj tak ju budeme NAT-ovať, takže by to mohla byť akákoľvek iná adresa, ideálne z privátnych rozsahov...
+
+Konfiguračný súbor teraz môže (ale nemusí) vyzerať nejako takto:
+
+```
+[Interface]
+Address = 10.100.0.1/24, fd08:4711::1/64 #Address of the VPS inside Wireguard
+ListenPort = 47111
+MTU = 1380
+PrivateKey = UOREQ/yam+jnDSns8sdyfmoDs5sds8sd5DS85s1pO7M=
+
+[Peer]
+PublicKey = JsJHf5sd7S7SDPhwjuPfb5ss730H1LQtrslzw57gie5=
+PresharedKey = jFs5sZ6584VS0SR5W9n86jbvR+bhOIdnsPs58aI4sIy=
+AllowedIPs = 10.100.0.2/32, fd08:4711::2/128, 192.168.0.0/24
+```
 
 
+5. Použitím `systemctl restart wg-quick@wg0` môžeme slúžbu WireGuard reštartovať, ktorá si načíta novú konfiguráciu s novými peermi. Pokiaľ nenastane žiadna chyba, a po spustení `wg` bude vo výpise vidno všetkých peerov so správnymi parametrami, môžeme pokračovať ďalej.
 
 
+Teraz ešte budeme potrebovať konfiguračný súbor ktorý dáme danému node / peerovi.
+
+6. Vytvoríme časť `[Interface]`:
+```
+echo "[Interface]" > "${name}.conf"
+echo "Address = 10.100.0.2/32, fd08:4711::2/128" >> "${name}.conf" # May need editing
+# (Optional)
+echo "MTU = 1360" >> "${name}.conf"                                # Add same MTU as is in the other peers config's
+```
+
+7. Pridáme do konfigurácie vygenerovaný kľúč pre tohto peera: `echo "PrivateKey = $(cat "${name}.key")" >> "${name}.conf"`
+
+8. Tu sa nám to už začína prekrývať s NAT-om. Pre NAT-ovanie medzi lokálnou sieťou v ktorej je Raspberry Pi, a sieťou 192.168.0.0/24 ktorá bude iba medzi WireGurad peermi, v tuneli, do konfigurácie pridáme:
+```
+echo "#Forwarding (NAT)" >> "${name}.conf"
+echo "PostUp = iptables -w -t nat -A POSTROUTING -o bond0 -j MASQUERADE; ip6tables -w -t nat -A POSTROUTING -o bond0 -j MASQUERADE" >> "${name}.conf"
+echo "PostDown = iptables -w -t nat -D POSTROUTING -o bond0 -j MASQUERADE; ip6tables -w -t nat -D POSTROUTING -o bond0 -j MASQUERADE" >> "${name}.conf"
+```
+  Kde:
+  `-o bond0` vo všetkkých štyroch príkazoch, je `bond0` rozhranie ktoré je priamo pripojené do lokálnej siete. Obvykle je to skôr `eth0`, `wlan0`, alebo niečo úplne iné, pokiaľ sú zapnuté "deskriptívne popisy" sieťových interfaces.
+
+9. Pre druhé zariadenia, pridáme tento server (VPS) ako peera, aby vedeli kam sa vlastne majú pripojiť:
+```
+[Peer]
+AllowedIPs = 10.100.0.0/24, fd08::/64       #IPs that are allowed to access the Pi, in this case everyone in Wireguard
+Endpoint = [your public IP or domain]:47111 #IP/domain where the WireGuard "server" runs.
+PersistentKeepalive = 25
+```
+
+10. Ako posledné, pridáme na koniec súboru, teda do časti `[Peer]`, kľúče potrebné pre pripojenie na server:
+```
+echo "PublicKey = $(cat server.pub)" >> "${name}.conf"
+echo "PresharedKey = $(cat "${name}.psk")" >> "${name}.conf"
+```
+
+Týmto máme konfiguračný súbor pre klienta (peera) pripravený. Môže (ale nemusí) vyzerať nejako takto:
+```
+[Interface]
+Address = 10.100.0.2/32, fd08:4711::2/128 #Address of the Pi inside Wireguard
+PrivateKey = 8JSdp82DFKskSoP79K14SUS6Xzbc06MQeWertyzuioP=
+MTU = 1360
+
+#Forwarding (NAT)
+PostUp = iptables -w -t nat -A POSTROUTING -o bond0 -j MASQUERADE; ip6tables -w -t nat -A POSTROUTING -o bond0 -j MASQUERADE
+PostDown = iptables -w -t nat -D POSTROUTING -o bond0 -j MASQUERADE; ip6tables -w -t nat -D POSTROUTING -o bond0 -j MASQUERADE
+
+#VPS
+[Peer]
+AllowedIPs = 10.100.0.0/24, fd08::/64 #IPs that are allowed to access the Pi, in this case everyone in Wireguard
+Endpoint = 80.211.207.110:47111 #IP of the VPS
+PersistentKeepalive = 25
+PublicKey = p3s1/O+Ifra7poIUpMLopFX5/+IQnE87kdsOns1gJUD=
+PresharedKey = KUZFžťRU76ztS57DoíáhS74WE+yťčwE6týváZtýXE0F=
+```
 
 
+//ToDo?!!
 
 
-
-
-
-
-
-
-
+# NAT, IPTABLES, ROUTING, FORWARDING, ...
 Teraz nám ešte bude treba čosi pre NATovanie paketov. CentOS 7 natívne používa `Firewalld`, ale ja, byť tvrdohlavý aký som, chcem napriek tomu použiť `iptables`.
 "Prepnúť" na iptables, je prekavpivo bezbolestné:
 ```
