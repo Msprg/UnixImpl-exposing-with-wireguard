@@ -291,6 +291,39 @@ Neskôr si ale určite budeme chcieť konfiguráciu iptables uložiť pomocou `s
 ## konfigurácia iptables pravidiel pre NAT-ovanie na serveri (a otváranie portov na internet)
 
 
+Keď už máme správne nakonfigurovaný WireGuard, kde z VPS môžeme pristupovať ku zariadeniam v LAN, pokiaľ by sme urobili  obdobný konfiguračný súbor pre daľšie zariadenia, ktoré by sa dali pripojiť ku WireGuard na VPS, ako napríklad telefón, z každého takéhoto zariadenia by sme po pripojení získali ku adresnému rozsahu 192.168.0.0/24 rovnaký prístup, akoby sme boli pripojení ku LAN. Pre osobné použitie sa to určite zíde, ale pokiaľ by sme chceli neajkú službu "otvorene" poskytovať na Internete, tak okrem toho, že nemôžeme každého nútiť nainštalovať a nakonfigurovať WireGuard, tak navyše aj otvoriť prístup do celej LAN na internete by bolo veľmi hlúpe.
+
+Našťastie stačí iba pár iptables pravidiel, ktoré otvoria na internet iba konkrétny port, konkrétneho zariadenia.
+
+
+Napríklad, ak by sme chceli forwardovať pakety protokolu `TCP`, prichádzajúce na interface `eth0` na port `5111`, na IP `192.168.0.200`, na port `5001`, použijeme nasledujúci pár príkazov:
+```
+iptables --table nat --append PREROUTING --in-interface eth0 --destination 80.211.207.110 --protocol tcp --dport 5111 --jump DNAT --to-destination 192.168.0.200:5001
+
+iptables --table nat --append POSTROUTING --protocol tcp --destination 192.168.0.200 --dport 5001 --jump SNAT --to-source 10.100.0.1
+```
+Tieto dva príkazy, pomocou NAT-u presmerujú všetky pakety prichádzajúce na interface eth0 port 5111, na IP 192.168.0.200 na port 5001. Iptables si taktiež zapamätajú, že tento paket bol forwardovaný a NAT-ovaný, takže keď server pošle odpoveď, iptables opäť zmenia port aj IP odpovede "naspäť", tak, aby opäť prišiel k pôvodnému odosielateľovi.
+
+
+Ako je spomenuté vyššie, konfigurácia iptables sa dá na CentOS 7 uložiť pomocou `service iptables save`, takže keď si urobíme pravidlá, a otvoríme porty ktoré potrebujeme, uložíme si ich, pretoŽe inak sa pri reštarte nezachovajú.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
