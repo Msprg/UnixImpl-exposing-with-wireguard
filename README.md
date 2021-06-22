@@ -68,6 +68,14 @@ Ako už bolo spomenuté, na serveri v mojom prípade beží CentOS 7.
 
 Nebudem tu demonštrovať nič z úvodnej konfigurácie, ako napríklad aktualizácie systému či bezpečné nastavenie SSH servera.
 
+### Príprava na forwardovanie a routovanie paketov
+
+Na koniec súboru, nachádzajúceho sa v prípade CentOS 7 v `/etc/sysctl.d/99-sysctl.conf`, pridáme `net.ipv4.ip_forward = 1` a `net.ipv6.conf.all.forwarding = 1`, čo zapne packet forwarding.
+
+**Tento súbor môže byť podľa distribúcie na inom mieste. Dajte si na to pozor!**
+
+
+
 ### Inštalácia WireGuard
 
 
@@ -231,8 +239,33 @@ PublicKey = p3s1/O+Ifra7poIUpMLopFX5/+IQnE87kdsOns1gJUD=
 PresharedKey = KUZFžťRU76ztS57DoíáhS74WE+yťčwE6týváZtýXE0F=
 ```
 
+Nakoniec tento konfiguračný súbor budeme nejako musieť dostať na zariadenie peera, pre ktoré bolo vytvorené. Kým `scp` by bola jedna možnosť, nie je problém ani skopírovať text a vložiť ho do prázdenho súboru na node.
 
-//ToDo?!!
+
+### Na tomto mieste je dobrý nápad celú konfiguráciu otestovať
+
+Keď sú konfiguračné súbory na svojich miestach, pomocou `systemctl start wg-quick@wg0` (kde `@wg0` je `wg0` názov konfiguračného súboru, v tomto prípade `wg0.conf`, ktorý bude aj názvom WireGuard interface).
+
+Potom, spustením `wg`, by sme mali vidieť či sa spojenie podarilo nadviazať. Napríklad pre výstup:
+```
+interface: wg0
+  public key: Kzh3/O+bQRXUTZx6WZlI5ajv/+RSytlo43g4gOLqZgQ=
+  private key: (hidden)
+  listening port: 47111
+
+peer: FKeRl37dsHbFgpemRiXoXBGoFaTpkmq0JMi34w7TR1k=
+  preshared key: (hidden)
+  endpoint: 88.212.41.116:46576
+  allowed ips: 10.100.0.2/32, fd08:4711::2/128, 192.168.0.0/24
+  latest handshake: 43 seconds ago
+  transfer: 149.32 MiB received, 13.30 MiB sent
+
+```
+
+Môžeme vidieť, že interface `wg0` počúva na porte 47111, a `peer` má `latest handshake: 43 seconds ago`, čo znamená že spojenie cez tunel funguje. V tomto prípade môžeme skúsiť ešte `ping 10.100.0.2` na otestovanie konektivity peera, cez tunel.
+
+Okrem toho, v povolených IP pre peera, `allowed ips: 10.100.0.2/32, fd08:4711::2/128, 192.168.0.0/24` je okrem jeho adries, aj adresný rozsah lokálnej siete: `192.168.0.0/24`.
+Ak je toto taktiež nastavené správne, WireGurad by mal pri spojení automagicky nastaviť NAT aj routing tak, že by už teraz mala fungovať konektivita medzi zariadeniami v LAN kde je Raspberry Pi, vo VPS. Napríklad `ping 192.168.0.1` by mal postupne cez tunel, RPi, LAN, a spať, úspešne dostať odpoved, v tomto prípade od môjho edge routera.
 
 
 # NAT, IPTABLES, ROUTING, FORWARDING, ...
@@ -255,6 +288,7 @@ Neskôr si ale určite budeme chcieť konfiguráciu iptables uložiť pomocou `s
 
 
 
+## konfigurácia iptables pravidiel pre NAT-ovanie na serveri (a otváranie portov na internet)
 
 
 
