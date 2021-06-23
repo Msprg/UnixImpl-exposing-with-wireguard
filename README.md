@@ -74,6 +74,8 @@ Na koniec súboru, nachádzajúceho sa v prípade CentOS 7 v `/etc/sysctl.d/99-s
 
 **Tento súbor môže byť podľa distribúcie na inom mieste. Dajte si na to pozor!**
 
+Ekvivalentnú konfiguráciu treba urobiť aj na Raspberry Pi.
+
 
 
 ### Inštalácia WireGuard
@@ -242,7 +244,7 @@ PresharedKey = KUZFžťRU76ztS57DoíáhS74WE+yťčwE6týváZtýXE0F=
 Nakoniec tento konfiguračný súbor budeme nejako musieť dostať na zariadenie peera, pre ktoré bolo vytvorené. Kým `scp` by bola jedna možnosť, nie je problém ani skopírovať text a vložiť ho do prázdenho súboru na node.
 
 
-### Na tomto mieste je dobrý nápad celú konfiguráciu otestovať
+### Na tomto mieste je dobrý nápad konfiguráciu WireGuard otestovať
 
 Keď sú konfiguračné súbory na svojich miestach, pomocou `systemctl start wg-quick@wg0` (kde `@wg0` je `wg0` názov konfiguračného súboru, v tomto prípade `wg0.conf`, ktorý bude aj názvom WireGuard interface).
 
@@ -264,11 +266,11 @@ peer: FKeRl37dsHbFgpemRiXoXBGoFaTpkmq0JMi34w7TR1k=
 
 Môžeme vidieť, že interface `wg0` počúva na porte 47111, a `peer` má `latest handshake: 43 seconds ago`, čo znamená že spojenie cez tunel funguje. V tomto prípade môžeme skúsiť ešte `ping 10.100.0.2` na otestovanie konektivity peera, cez tunel.
 
-Okrem toho, v povolených IP pre peera, `allowed ips: 10.100.0.2/32, fd08:4711::2/128, 192.168.0.0/24` je okrem jeho adries, aj adresný rozsah lokálnej siete: `192.168.0.0/24`.
-Ak je toto taktiež nastavené správne, WireGurad by mal pri spojení automagicky nastaviť NAT aj routing tak, že by už teraz mala fungovať konektivita medzi zariadeniami v LAN kde je Raspberry Pi, vo VPS. Napríklad `ping 192.168.0.1` by mal postupne cez tunel, RPi, LAN, a spať, úspešne dostať odpoved, v tomto prípade od môjho edge routera.
-
 
 # NAT, IPTABLES, ROUTING, FORWARDING, ...
+
+## iptables na CentOS
+
 Teraz nám ešte bude treba čosi pre NATovanie paketov. CentOS 7 natívne používa `Firewalld`, ale ja, byť tvrdohlavý aký som, chcem napriek tomu použiť `iptables`.
 "Prepnúť" na iptables, je prekavpivo bezbolestné:
 ```
@@ -287,9 +289,41 @@ A to je v podstate všetko, čo sa inštalácie iptables týka. Ak by sme služb
 Neskôr si ale určite budeme chcieť konfiguráciu iptables uložiť pomocou `service iptables save`, inak sa nám po reštarte zmaže.
 
 
+## iptables na Raspberry Pi
+
+Vzhľadom na to, že na mojom RPi beží Raspbian (Raspberry Pi OS, ale ja ho volám starým menom) z debianovej vetvy, iptables netreba inštalovať.
+
+Musíme však zabezpečiť, aby, keď systém bude NAT-ovať a forwardovať pakety medzi interfaces wg0 (WireGuard tunel) a bond0 (interface priamo pripojené v LAN), iptables neblokovali tento forwarding a komunikáciu medzi týmito intefaces.
+
+To sa dá jednoducho pomocou:
+```
+iptables -I FORWARD -i wg0 -o bond0 -j ACCEPT
+iptables -I FORWARD -i bond0 -o wg0 -j ACCEPT
+```
+Ideálne je si po otestovaní tieto zmeny aj hneď uložiť. Pre Raspbian by mal fungovať príkaz `service netfilter-persistent save`.
+
+Každopádne, to by na Raspberry Pi malo byť zatiaľ jediné z iptables čo treba nakonfiguraovať.
+
+
+## Test forwardingu a NAT-ovania (na VPS)
+
+Teraz by sa opäť oplatilo otestovať konfiguráciu.
+
+Ak si opäť pozrieme výstup príkazu `wg`, zistíme, že v povolených IP pre peera, `allowed ips: 10.100.0.2/32, fd08:4711::2/128, 192.168.0.0/24` je okrem jeho adries, aj adresný rozsah lokálnej siete: `192.168.0.0/24`.
+
+Ak je toto nastavené správne, WireGurad by mal pri spojení automagicky nastaviť NAT aj routing tak, že by už teraz mala fungovať konektivita medzi zariadeniami v LAN kde je Raspberry Pi, z VPS. Napríklad `ping 192.168.0.1` by mal postupne cez tunel, RPi, LAN, a spať, úspešne dostať ICMP odpoved, v tomto prípade od môjho edge routera.
+```
+# ping 192.168.0.1
+PING 192.168.0.1 (192.168.0.1) 56(84) bytes of data.
+64 bytes from 192.168.0.1: icmp_seq=1 ttl=63 time=33.0 ms
+64 bytes from 192.168.0.1: icmp_seq=2 ttl=63 time=33.1 ms
+^C
+--- 192.168.0.1 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1001ms
+rtt min/avg/max/mdev = 33.077/33.104/33.131/0.027 ms
+```
 
 ## konfigurácia iptables pravidiel pre NAT-ovanie na serveri (a otváranie portov na internet)
-
 
 Keď už máme správne nakonfigurovaný WireGuard, kde z VPS môžeme pristupovať ku zariadeniam v LAN, pokiaľ by sme urobili  obdobný konfiguračný súbor pre daľšie zariadenia, ktoré by sa dali pripojiť ku WireGuard na VPS, ako napríklad telefón, z každého takéhoto zariadenia by sme po pripojení získali ku adresnému rozsahu 192.168.0.0/24 rovnaký prístup, akoby sme boli pripojení ku LAN. Pre osobné použitie sa to určite zíde, ale pokiaľ by sme chceli neajkú službu "otvorene" poskytovať na Internete, tak okrem toho, že nemôžeme každého nútiť nainštalovať a nakonfigurovať WireGuard, tak navyše aj otvoriť prístup do celej LAN na internete by bolo veľmi hlúpe.
 
@@ -304,34 +338,13 @@ iptables --table nat --append POSTROUTING --protocol tcp --destination 192.168.0
 ```
 Tieto dva príkazy, pomocou NAT-u presmerujú všetky pakety prichádzajúce na interface eth0 port 5111, na IP 192.168.0.200 na port 5001. Iptables si taktiež zapamätajú, že tento paket bol forwardovaný a NAT-ovaný, takže keď server pošle odpoveď, iptables opäť zmenia port aj IP odpovede "naspäť", tak, aby opäť prišiel k pôvodnému odosielateľovi.
 
-
 Ako je spomenuté vyššie, konfigurácia iptables sa dá na CentOS 7 uložiť pomocou `service iptables save`, takže keď si urobíme pravidlá, a otvoríme porty ktoré potrebujeme, uložíme si ich, pretoŽe inak sa pri reštarte nezachovajú.
 
+Teraz sme už ale vlastne dosiahli cieľ - pomocou dvoch iptables príkazov, môžeme ku službám bežiacim na zariadeniach v LAN pristpovať cez VPS server podobne, ako cez lokálnu sieť.
 
+# Zhrnutie
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Začali sme prakticky s dvoma čistými linuxovými distribúciami, na ktorých sme postupne nakonfigurovali VPN tunel, NAT-ovanie a na koniec aj forwardovanie paketov z Internetu, až do zariadenia v LAN. Toto funguje celkom dobre, minimálne pre Webservery respektíve možno aj nejaké zložitejšie web stránky.
 
 
 
