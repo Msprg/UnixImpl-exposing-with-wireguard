@@ -5,9 +5,9 @@ Autor: Matúš Prančík
 
 # Obsah - TOC
 
-- [UnixImpl-exposing-with-wireguard](#user-content-uniximpl-exposing-with-wireguard)
+- [UnixImpl-exposing-with-wireguard](#uniximpl-exposing-with-wireguard)
 - [Obsah - TOC](#obsah---toc)
-- [Koncept a cieľ(e)](#zadanie-semestrálneho-projektu)
+- [Koncept a cieľ(e)](#koncept-a-cieľe)
 - [Kde a ako získať Manjaro](#kde-a-ako-získať-manjaro)
 - [Príprava nového virtuálneho stroja vo VMware Workstation 16](#príprava-nového-virtuálneho-stroja-vo-vmware-workstation-16)
 - [Live systém a inštalácia systému](#Live-systém-a-inštalácia-systému)
