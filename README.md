@@ -5,7 +5,7 @@ Autor: Matúš Prančík
 
 # Obsah - TOC
 
-- [UnixImpl-exposing-with-wireguard](#udos_manjaro)
+- [UnixImpl-exposing-with-wireguard](#user-content-uniximpl-exposing-with-wireguard)
 - [Obsah - TOC](#obsah---toc)
 - [Koncept a cieľ(e)](#zadanie-semestrálneho-projektu)
 - [Kde a ako získať Manjaro](#kde-a-ako-získať-manjaro)
