@@ -16,7 +16,7 @@ Autor: Matúš Prančík
 -   [Príprava na forwardovanie a routovanie paketov](#príprava-na-forwardovanie-a-routovanie-paketov)
 -   [Inštalácia WireGuard](#inštalácia-wireguard)
 -   [Konfigurácia WireGuard na VPS](#konfigurácia-wireguard-na-vps)
--   [Vytváranie konfigurácií pre klientov (nodes)](#prvé-spustenie-systému-a-inštalácia-aktualizácií)
+-   [Vytváranie konfigurácií pre klientov (nodes)](#vytváranie-konfigurácií-pre-klientov-nodes)
 -   [Test kofigurácie](#na-tomto-mieste-je-dobrý-nápad-konfiguráciu-wireguard-otestovať)
 - [NAT, IPTABLES, ROUTING, FORWARDING, ...](#nat-iptables-routing-forwarding-)
 -   [iptables na CentOS](#iptables-na-centos)
