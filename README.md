@@ -8,12 +8,24 @@ Autor: Matúš Prančík
 - [UnixImpl-exposing-with-wireguard](#uniximpl-exposing-with-wireguard)
 - [Obsah - TOC](#obsah---toc)
 - [Koncept a cieľ(e)](#koncept-a-cieľe)
-- [Kde a ako získať Manjaro](#kde-a-ako-získať-manjaro)
-- [Príprava nového virtuálneho stroja vo VMware Workstation 16](#príprava-nového-virtuálneho-stroja-vo-vmware-workstation-16)
-- [Live systém a inštalácia systému](#Live-systém-a-inštalácia-systému)
-- [Prvé spustenie systému, a inštalácia aktualizácií](#prvé-spustenie-systému-a-inštalácia-aktualizácií)
-- [Inštalácia aplikácií a nastavenie systému pre účely zadania](#Inštalácia-aplikácií-a-nastavenie-systému-pre-účely-zadania)
-- [Hotovo!](#hotovo)
+- [Prístup do siete okľukou](#prístup-do-siete-okľukou)
+-   [Môj VPS](#môj-vps)
+-   [Základný koncept fungovania](#základný-koncept-fungovania)
+- [Samotná konfigurácia v praxi](#samotná-konfigurácia-v-praxi)
+-   [Konfigurácia servera / VPS](#konfigurácia-servera--vps)
+-   [Príprava na forwardovanie a routovanie paketov](#samotná-konfigurácia-v-praxi)
+-   [Inštalácia WireGuard](#samotná-konfigurácia-v-praxi)
+-   [Konfigurácia WireGuard na VPS](#samotná-konfigurácia-v-praxi)
+-   [Vytváranie konfigurácií pre klientov (nodes)](#prvé-spustenie-systému-a-inštalácia-aktualizácií)
+-   [Test kofigurácie](#na-tomto-mieste-je-dobrý-nápad-konfiguráciu-wireguard-otestovať)
+- [NAT, IPTABLES, ROUTING, FORWARDING, ...](#nat-iptables-routing-forwarding-)
+-   [iptables na CentOS](#na-tomto-mieste-je-dobrý-nápad-konfiguráciu-wireguard-otestovať)
+-   [iptables na Raspberry Pi](#na-tomto-mieste-je-dobrý-nápad-konfiguráciu-wireguard-otestovať)
+-   [Test forwardingu a NAT-ovania (na VPS)](#na-tomto-mieste-je-dobrý-nápad-konfiguráciu-wireguard-otestovať)
+-   [Test kofigurácie](#na-tomto-mieste-je-dobrý-nápad-konfiguráciu-wireguard-otestovať)
+-   [Test kofigurácie](#na-tomto-mieste-je-dobrý-nápad-konfiguráciu-wireguard-otestovať)
+- [Konfigurácia iptables pravidiel pre NAT-ovanie na serveri (a otváranie portov na internet)](#Konfigurácia-iptables-pravidiel-pre-nat-ovanie-na-serveri-a-otváranie-portov-na-internet)
+- [Záver](#hotovo)
 
 
 # Koncept a cieľ(e)
@@ -323,7 +335,7 @@ PING 192.168.0.1 (192.168.0.1) 56(84) bytes of data.
 rtt min/avg/max/mdev = 33.077/33.104/33.131/0.027 ms
 ```
 
-## konfigurácia iptables pravidiel pre NAT-ovanie na serveri (a otváranie portov na internet)
+## Konfigurácia iptables pravidiel pre NAT-ovanie na serveri (a otváranie portov na internet)
 
 Keď už máme správne nakonfigurovaný WireGuard, kde z VPS môžeme pristupovať ku zariadeniam v LAN, pokiaľ by sme urobili  obdobný konfiguračný súbor pre daľšie zariadenia, ktoré by sa dali pripojiť ku WireGuard na VPS, ako napríklad telefón, z každého takéhoto zariadenia by sme po pripojení získali ku adresnému rozsahu 192.168.0.0/24 rovnaký prístup, akoby sme boli pripojení ku LAN. Pre osobné použitie sa to určite zíde, ale pokiaľ by sme chceli neajkú službu "otvorene" poskytovať na Internete, tak okrem toho, že nemôžeme každého nútiť nainštalovať a nakonfigurovať WireGuard, tak navyše aj otvoriť prístup do celej LAN na internete by bolo veľmi hlúpe.
 
@@ -342,7 +354,7 @@ Ako je spomenuté vyššie, konfigurácia iptables sa dá na CentOS 7 uložiť p
 
 Teraz sme už ale vlastne dosiahli cieľ - pomocou dvoch iptables príkazov, môžeme ku službám bežiacim na zariadeniach v LAN pristpovať cez VPS server podobne, ako cez lokálnu sieť.
 
-# Zhrnutie
+# Záver
 
 Začali sme prakticky s dvoma čistými linuxovými distribúciami, na ktorých sme postupne nakonfigurovali VPN tunel, NAT-ovanie a na koniec aj forwardovanie paketov z Internetu, až do zariadenia v LAN. Toto funguje celkom dobre, minimálne pre Webservery respektíve možno aj nejaké zložitejšie web stránky.
 
